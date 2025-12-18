@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -9,7 +8,6 @@ import {
   Wallet, 
   Receipt, 
   Award, 
-  Users, 
   PieChart as PieIcon, 
   List, 
   AlertTriangle, 
@@ -27,16 +25,16 @@ const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // --- Types & Interfaces ---
 interface SaleRecord {
-  tanggal: string; // New Format: "1 January 2020"
+  tanggal: string;
   nama_pembeli: string;
   nama_barang: string;
   total_penjualan_motor: number | string;
   nominal: number | string;
-  bulan_tahun?: string; // Kept for backward compatibility if API still sends it
+  bulan_tahun?: string;
 }
 
 interface FilterState {
-  periode: string; // Using 'tanggal' values for this
+  periode: string;
   nama_barang: string;
 }
 
@@ -93,7 +91,8 @@ const App: React.FC = () => {
       if (!response.ok) throw new Error('Koneksi ke server gagal. Pastikan API URL benar.');
       
       const json = await response.json();
-      const records = Array.isArray(json) ? json : (json.data || []);
+      // FIX 1: Explicitly cast the data to SaleRecord[]
+      const records = (Array.isArray(json) ? json : (json.data || [])) as SaleRecord[];
       
       if (records.length === 0) {
         throw new Error('Data tidak ditemukan atau format data tidak sesuai.');
@@ -123,9 +122,9 @@ const App: React.FC = () => {
   }, [fetchData]);
 
   // Filter Logic
-  // Unique dates from 'tanggal' column for Period filtering
+  // FIX 2: Explicitly tell Set that it contains <string> to avoid 'unknown' inference
   const uniquePeriods = useMemo(() => {
-    const dates = Array.from(new Set(data.map(d => d.tanggal)));
+    const dates = Array.from(new Set<string>(data.map(d => String(d.tanggal))));
     return ['all', ...sortDates(dates).reverse()];
   }, [data]);
 
@@ -394,7 +393,6 @@ const App: React.FC = () => {
                     dataKey="date" 
                     fontSize={10} 
                     tickFormatter={(val) => {
-                      // Attempt to shorten the long date for the axis
                       const parts = val.split(' ');
                       return parts.length > 1 ? `${parts[0]} ${parts[1].substring(0,3)}` : val;
                     }}
